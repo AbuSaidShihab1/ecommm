@@ -1,0 +1,2156 @@
+import React, { useContext, useEffect, useState,useMemo,useRef} from 'react'
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Contextapi } from '../../context/Appcontext';
+import Dashboardleftside from '../../components/Business_dashboard/Dashboardleftside';
+import Dashboradheader from '../../components/Business_dashboard/Dashboardheader';
+import { IoIosArrowForward } from "react-icons/io";
+import { BiImport } from "react-icons/bi";
+import { LuSaveAll } from "react-icons/lu";
+import { FaRegUserCircle } from "react-icons/fa";
+import { AiOutlineDelete, AiOutlineEdit } from "react-icons/ai"; // Delete and Edit icons
+import { BsSearch, BsPlus, BsDash } from "react-icons/bs"; 
+import { LuMinus } from "react-icons/lu";
+import { FiEdit } from "react-icons/fi";
+import { FiPlus } from "react-icons/fi";
+import { MdOutlineDelete } from "react-icons/md";
+import {FiX } from "react-icons/fi";
+import SunEditor from "suneditor-react";
+import "suneditor/dist/css/suneditor.min.css";
+import { FiChevronDown } from "react-icons/fi";
+// Sample product data
+const productData = [
+  {id:1,name: "Lee Shirts", barcode: "IT0001", model: "Qty:6.00", price: 20, quantity: 1 },
+  {id:2, name: "Signature Jeans", barcode: "IT0002", model: "Qty:10.00", price: 30, quantity: 1 },
+  {id:3, name: "Suits", barcode: "IT0004", model: "Qty:5.00", price: 50, quantity: 1 },
+  {id:4, name: "Rd Shoes", barcode: "IT0005", model: "Qty:7.00", price: 40, quantity: 1 },
+  { id:5,name: "VP Shoes", barcode: "IT0006", model: "Qty:6.00", price: 35, quantity: 1 },
+];
+// ---------------discount popup----------------
+const DiscountPopup = ({
+  isOpen,
+  onClose,
+  product,
+  onApplyDiscount,
+}) => {
+  const [discountType, setDiscountType] = useState("Fixed");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [description, setDescription] = useState("");
+
+  const calculateDiscount = () => {
+    const basePrice = product.unitPrice * product.quantity;
+    if (discountType === "Percentage") {
+      return (basePrice * discountAmount) / 100;
+    } else {
+      return Math.min(discountAmount, basePrice);
+    }
+  };
+
+  const handleApplyCoupon = () => {
+    if (couponCode === "SAVE10") {
+      setCouponDiscount(10);
+    } else if (couponCode === "SAVE20") {
+      setCouponDiscount(20);
+    } else {
+      setCouponDiscount(0);
+      alert("Invalid coupon code");
+    }
+  };
+
+  const handleApply = () => {
+    const totalDiscount = calculateDiscount() + couponDiscount;
+    onApplyDiscount(totalDiscount, couponCode, description);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const totalDiscount = calculateDiscount() + couponDiscount;
+  const finalPrice =
+    product.unitPrice * product.quantity - totalDiscount;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100000000]">
+      <div className="bg-white rounded-lg p-6 w-[600px]">
+        <h2 className="text-xl font-semibold mb-4 text-brand_color">Discount Edit Window</h2>
+
+        <div className="flex gap-4">
+          {/* Left Side */}
+          <div className="flex-1">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Discount Type</label>
+              <select
+                value={discountType}
+                onChange={(e) => setDiscountType(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="Fixed">Fixed</option>
+                <option value="Percentage">Percentage</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Discount Amount</label>
+              <input
+                type="number"
+                value={discountAmount}
+                onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Apply Coupon</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="w-full border rounded px-3 py-2 bg-gray-50"
+                />
+                <div
+                  onClick={handleApplyCoupon}
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                >
+                  Apply
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className="flex-1 bg-gray-100 p-4 rounded">
+            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+            <div className="mb-2 flex justify-between">
+              <span>Product Price:</span>
+              <span>${product.unitPrice * product.quantity}</span>
+            </div>
+            <div className="mb-2 flex justify-between">
+              <span>Discount:</span>
+              <span>${calculateDiscount()}</span>
+            </div>
+            <div className="mb-2 flex justify-between">
+              <span>Coupon Discount:</span>
+              <span>${couponDiscount}</span>
+            </div>
+            <div className="mb-2 flex justify-between font-bold">
+              <span>Total Discount:</span>
+              <span>${totalDiscount}</span>
+            </div>
+            <div className="flex justify-between font-bold text-brand_color">
+              <span>Final Price:</span>
+              <span>${finalPrice}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Cancel
+          </button>
+          <div
+            onClick={handleApply}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Apply
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+// -------------tax-popup--------------
+
+const TaxPopup = ({
+  isOpen,
+  onClose,
+  product,
+  onApplyTax,
+}) => {
+  const [taxType, setTaxType] = useState("Exclusive");
+  const [taxAmount, setTaxAmount] = useState("10%");
+  const [customTaxType, setCustomTaxType] = useState("Fixed");
+  const [customTaxAmount, setCustomTaxAmount] = useState(0);
+  const [description, setDescription] = useState("");
+  const [isCustomTaxEnabled, setIsCustomTaxEnabled] = useState(false); // State to toggle custom tax visibility
+
+  const calculateTax = () => {
+    const basePrice = product.unitPrice * product.quantity;
+    let taxPercentage = parseFloat(taxAmount) / 100; // Convert "10%" to 0.1
+    let tax = 0;
+
+    if (customTaxType === "Percentage") {
+      tax = (basePrice * customTaxAmount) / 100;
+    } else if (customTaxType === "Fixed") {
+      tax = Math.min(customTaxAmount, basePrice);
+    } else {
+      tax = basePrice * taxPercentage;
+    }
+
+    // Adjust for tax type
+    if (taxType === "Inclusive") {
+      tax = basePrice - basePrice / (1 + taxPercentage);
+    }
+
+    return tax;
+  };
+
+  const calculatedTax = useMemo(() => calculateTax(), [
+    taxType,
+    taxAmount,
+    customTaxType,
+    customTaxAmount,
+    product,
+  ]);
+
+  const finalPrice = useMemo(() => {
+    const basePrice = product.unitPrice * product.quantity;
+    return taxType === "Inclusive"
+      ? basePrice
+      : basePrice + calculatedTax;
+  }, [calculatedTax, taxType, product]);
+
+  const handleApplyTax = () => {
+    onApplyTax(calculatedTax, taxType, description);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100000000]">
+      <div className="bg-white rounded-lg p-6 w-[600px]">
+        <h2 className="text-xl font-semibold mb-4 text-brand_color">Tax Edit Window</h2>
+
+        <div className="flex gap-4">
+          {/* Left Side */}
+          <div className="flex-1">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Tax Type</label>
+              <select
+                value={taxType}
+                onChange={(e) => setTaxType(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="Exclusive">Exclusive</option>
+                <option value="Inclusive">Inclusive</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Tax Amount</label>
+              <select
+                value={taxAmount}
+                onChange={(e) => setTaxAmount(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="10%">Tax 10%</option>
+                <option value="15%">Tax 15%</option>
+              </select>
+            </div>
+
+            {/* Custom Tax Toggle */}
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="enable-custom-tax"
+                checked={isCustomTaxEnabled}
+                onChange={() => setIsCustomTaxEnabled(!isCustomTaxEnabled)}
+                className="form-checkbox h-3 w-3 text-brand_color"
+              />
+              <label htmlFor="enable-custom-tax" className="text-sm font-medium">
+                Enable Custom Tax
+              </label>
+            </div>
+
+            {/* Custom Tax Fields */}
+            {isCustomTaxEnabled && (
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <select
+                    value={customTaxType}
+                    onChange={(e) => setCustomTaxType(e.target.value)}
+                    className="w-full border rounded px-3 py-2 bg-gray-50"
+                  >
+                    <option value="Fixed">Fixed</option>
+                    <option value="Percentage">Percentage</option>
+                  </select>
+                  <input
+                    type="number"
+                    value={customTaxAmount}
+                    onChange={(e) => setCustomTaxAmount(Number(e.target.value))}
+                    className="w-full border rounded px-3 py-2 bg-gray-50"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className="flex-1 bg-gray-100 p-4 rounded">
+            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+            <div className="mb-2 flex justify-between">
+              <span>Product Price:</span>
+              <span>${(product.unitPrice * product.quantity).toFixed(2)}</span>
+            </div>
+            <div className="mb-2 flex justify-between">
+              <span>Tax Amount:</span>
+              <span>${calculatedTax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-brand_color">
+              <span>Final Price:</span>
+              <span>${finalPrice.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleApplyTax}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+// ---------------other-charges--------
+const TaxEditorPopup = ({
+  isEditorOpen,
+  closeEditor,
+  selectedProduct,
+  applyTaxChanges,
+}) => {
+  const [taxSelectionType, setTaxSelectionType] = useState("Exclusive");
+  const [presetTaxAmount, setPresetTaxAmount] = useState("10%");
+  const [customizedTaxType, setCustomizedTaxType] = useState("Fixed");
+  const [customizedTaxValue, setCustomizedTaxValue] = useState(0);
+  const [extraDescription, setExtraDescription] = useState("");
+
+  const computeTax = () => {
+    const totalBasePrice = selectedProduct.unitPrice * selectedProduct.quantity;
+    if (customizedTaxType === "Percentage") {
+      return (totalBasePrice * customizedTaxValue) / 100;
+    } else {
+      return Math.min(customizedTaxValue, totalBasePrice);
+    }
+  };
+
+  const confirmTaxChanges = () => {
+    const taxResult = computeTax();
+    applyTaxChanges(taxResult, taxSelectionType, extraDescription);
+    closeEditor();
+  };
+
+  if (!isEditorOpen) return null;
+
+  const taxCalculationResult = computeTax();
+  const adjustedFinalPrice =
+    selectedProduct.unitPrice * selectedProduct.quantity + taxCalculationResult;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-[600px]">
+        <h2 className="text-xl font-semibold mb-4 text-brand_color">Tax Edit Window</h2>
+
+        <div className="flex gap-4">
+          {/* Left Side */}
+          <div className="flex-1">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Tax Type</label>
+              <select
+                value={taxSelectionType}
+                onChange={(e) => setTaxSelectionType(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="Exclusive">Exclusive</option>
+                <option value="Inclusive">Inclusive</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Tax Amount</label>
+              <select
+                value={presetTaxAmount}
+                onChange={(e) => setPresetTaxAmount(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="10%">Tax 10%</option>
+                <option value="15%">Tax 15%</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Enable Custom Tax</label>
+              <div className="flex gap-2">
+                <select
+                  value={customizedTaxType}
+                  onChange={(e) => setCustomizedTaxType(e.target.value)}
+                  className="w-full border rounded px-3 py-2 bg-gray-50"
+                >
+                  <option value="Fixed">Fixed</option>
+                  <option value="Percentage">Percentage</option>
+                </select>
+                <input
+                  type="number"
+                  value={customizedTaxValue}
+                  onChange={(e) => setCustomizedTaxValue(Number(e.target.value))}
+                  className="w-full border rounded px-3 py-2 bg-gray-50"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                value={extraDescription}
+                onChange={(e) => setExtraDescription(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className="flex-1 bg-gray-100 p-4 rounded">
+            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+            <div className="mb-2 flex justify-between">
+              <span>Product Price:</span>
+              <span>${selectedProduct.unitPrice * selectedProduct.quantity}</span>
+            </div>
+            <div className="mb-2 flex justify-between">
+              <span>Tax Amount:</span>
+              <span>${taxCalculationResult}</span>
+            </div>
+            <div className="flex justify-between font-bold text-brand_color">
+              <span>Final Price:</span>
+              <span>${adjustedFinalPrice}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={closeEditor}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmTaxChanges}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// ======================all discount-----------------------
+const DiscountEditorPopup = ({
+  isDiscountEditorOpen,
+  closeDiscountEditor,
+  totalAmount,
+  applyDiscountChanges,
+}) => {
+  const [discountType, setDiscountType] = useState("Fixed");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
+  const [discountDescription, setDiscountDescription] = useState("");
+  const [isCouponApplied, setIsCouponApplied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Predefined valid coupon codes (for demo purposes)
+  const validCoupons = {
+    "SAVE10": 10,  // 10% discount
+    "FIXED20": 20  // $20 fixed discount
+  };
+
+  const computeDiscount = () => {
+    if (discountType === "Percentage") {
+      return (totalAmount * discountValue) / 100;
+    } else {
+      return Math.min(discountValue, totalAmount);
+    }
+  };
+
+  const applyCoupon = () => {
+    if (validCoupons[couponCode]) {
+      const couponDiscount = validCoupons[couponCode];
+      if (discountType === "Percentage") {
+        setDiscountValue(couponDiscount);  // Apply percentage discount
+      } else {
+        setDiscountValue(Math.min(couponDiscount, totalAmount));  // Apply fixed discount
+      }
+      setIsCouponApplied(true);
+      setErrorMessage("");
+    } else {
+      setIsCouponApplied(false);
+      setErrorMessage("Invalid coupon code.");
+    }
+  };
+
+  const confirmDiscountChanges = () => {
+    const discountResult = computeDiscount();
+    applyDiscountChanges(discountResult, discountType, couponCode, discountDescription);
+    closeDiscountEditor();
+  };
+
+  if (!isDiscountEditorOpen) return null;
+
+  const discountCalculationResult = computeDiscount();
+  const adjustedTotal = totalAmount - discountCalculationResult;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-[600px]">
+        <h2 className="text-xl font-semibold mb-4 text-brand_color">Discount on All Edit Window</h2>
+
+        <div className="flex gap-4">
+          {/* Left Side */}
+          <div className="flex-1">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Discount Type</label>
+              <select
+                value={discountType}
+                onChange={(e) => setDiscountType(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              >
+                <option value="Fixed">Fixed</option>
+                <option value="Percentage">Percentage</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Discount Amount</label>
+              <input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(Number(e.target.value))}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                value={discountDescription}
+                onChange={(e) => setDiscountDescription(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-gray-50"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Apply Coupon</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="w-full border rounded px-3 py-2 bg-gray-50"
+                />
+                <button
+                  onClick={applyCoupon}
+                  className="px-4 py-2 bg-green-500 text-white rounded"
+                >
+                  Apply
+                </button>
+              </div>
+              {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className="flex-1 bg-gray-100 p-4 rounded">
+            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+            <div className="mb-2 flex justify-between">
+              <span>Total Amount:</span>
+              <span>${totalAmount}</span>
+            </div>
+            <div className="mb-2 flex justify-between">
+              <span>Discount Amount:</span>
+              <span>${discountCalculationResult}</span>
+            </div>
+            <div className="flex justify-between font-bold text-brand_color">
+              <span>Adjusted Total:</span>
+              <span>${adjustedTotal}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={closeDiscountEditor}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDiscountChanges}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// ----------------handle-payment-----------------
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+
+// Custom Select Component
+const CustomSelect = ({ options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleSelectOption = (option) => {
+    // If the option is already selected, we deselect it
+    if (value === option) {
+      onChange('');
+    } else {
+      onChange(option);
+    }
+    setIsOpen(false); // Close dropdown after selection
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className="w-full px-[10px] py-[8px] text-gray-700 border rounded-[5px] focus:outline-none flex justify-between items-center"
+        onClick={toggleDropdown}
+      >
+        <span>{value || 'Select Payment Type'}</span>
+        <span>
+          {isOpen ? (
+            <FaChevronUp className="text-gray-700" />
+          ) : (
+            <FaChevronDown className="text-gray-700" />
+          )}
+        </span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 border bg-white rounded-[5px] shadow-lg">
+          {options.map((option) => (
+            <button
+              key={option}
+              className={`w-full px-[10px] py-[8px] text-left hover:bg-gray-100 ${value === option ? 'bg-gray-200' : ''}`}
+              onClick={() => handleSelectOption(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Dummy function to calculate total amount and grand total
+const calculateTotal = () => {
+  // Replace with your logic to calculate the total
+  return 1000; // Example value
+};
+
+const calculateGrandTotal = () => {
+  // Replace with your logic for calculating the grand total
+  return calculateTotal() + 100; // Example for adding other charges
+};
+
+const PaymentPopup = ({ closePopup,totalAmount,
+  totalDiscount,
+  totalTax,
+  totalPay,
+  openEditor,
+  handleEditClick2}) => {
+    const [amount, setAmount] = useState('');
+      const [paymentType, setPaymentType] = useState('');
+      const [paymentNote, setPaymentNote] = useState('');
+    
+      const paymentTypes = ['Cash', 'Check', 'Bkash', 'Nagod', 'DBBL'];
+    
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        // Handle form submission logic here
+        console.log({ amount, paymentType, paymentNote });
+        closePopup(); // Close the popup after submission
+      };
+      // -----------------------total table-data----------------------
+      const [selectedProducts, setSelectedProducts] = useState([]);
+      const [currentProduct, setCurrentProduct] = useState(null);
+      const [isTaxPopupOpen, setTaxPopupOpen] = useState(false);
+      const [isDiscountPopupOpen, setDiscountPopupOpen] = useState(false);
+    
+      const handleAddProduct = (product) => {
+        const existingProductIndex = selectedProducts.findIndex(
+          (p) => p.id === product.id
+        );
+    
+        if (existingProductIndex > -1) {
+          const updatedProducts = [...selectedProducts];
+          updatedProducts[existingProductIndex].quantity += 1;
+          setSelectedProducts(updatedProducts);
+        } else {
+          setSelectedProducts([
+            ...selectedProducts,
+            { ...product, quantity: 1, discount: 0, tax: 0 },
+          ]);
+        }
+      };
+    
+      // const [totalAmount, setTotalAmount] = useState(1000);  // Example value for total amount
+      // const [totalDiscount, setTotalDiscount] = useState(100);  // Example discount value
+      // const [totalTax, setTotalTax] = useState(150);  // Example tax value
+    
+    
+    
+      // const totalPay = totalAmount - totalDiscount + totalTax; 
+      
+  return (
+    <div className="fixed inset-0 w-full bg-gray-800 bg-opacity-50 flex justify-center items-center z-[100000000]">
+      <div className="bg-white p-[20px] rounded-[8px] w-[40%] flex justify-center ">
+      <div className="flex-1">
+        <h3 className="text-xl mb-[20px] text-center">Payment Details</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-[12px]">
+            <label htmlFor="amount" className="block mb-[4px]">Amount</label>
+            <input
+              type="text"
+              id="amount"
+              className="w-full px-[10px] py-[8px] border rounded-[5px]"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-[12px]">
+            <label htmlFor="paymentType" className="block mb-[4px]">Payment Type</label>
+            <CustomSelect
+              options={paymentTypes}
+              value={paymentType}
+              onChange={setPaymentType}
+            />
+          </div>
+          <div className="mb-[12px]">
+            <label htmlFor="paymentNote" className="block mb-[4px]">Payment Note</label>
+            <textarea
+              id="paymentNote"
+              className="w-full px-[10px] py-[8px] border rounded-[5px]"
+              value={paymentNote}
+              onChange={(e) => setPaymentNote(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-between">
+            <button
+              type="button"
+              className="px-[15px] py-[8px] bg-gray-300 text-black rounded-[5px]"
+              onClick={closePopup}
+            >
+              Close
+            </button>
+            <button
+              type="submit"
+              className="px-[15px] py-[8px] bg-brand_color text-white rounded-[5px]"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
+      </div>
+          {/* Right Side */}
+      <div className="w-[300px] ml-[20px]">
+        <h3 className="text-xl mb-[20px] text-center">Summary</h3>
+        <div className="flex justify-between mb-[10px]">
+          <span className="font-medium text-gray-700">Total Amount:</span>
+          <span className="text-gray-700">${totalAmount}</span>
+        </div>
+        <div className="flex justify-between mb-[10px]">
+          <span className="font-medium text-gray-700">Total Discount:</span>
+          <span className="text-gray-700">-${totalDiscount}</span>
+        </div>
+        <div className="flex justify-between mb-[10px]">
+          <span className="font-medium text-gray-700">Total Tax:</span>
+          <span className="text-gray-700">${totalTax}</span>
+        </div>
+        <div className="flex justify-between font-bold text-brand_color">
+          <span className="text-lg">Total Pay:</span>
+          <span className="text-lg">${totalPay}</span>
+        </div>
+      </div>
+
+      </div>
+    </div>
+  );
+};
+
+
+
+const Bneworder = () => {
+   const navigate=useNavigate();
+     const {activesidebar,setactivesidebar,activetopbar,setactivetopbar}=useContext(Contextapi);
+     const [showmodal,setmodal]=useState(false);
+     const uploadpost=()=>{
+                setmodal(true)
+     }
+    function handlesidebar(){
+        setactivesidebar(!activesidebar)
+    }
+        useEffect(()=>{
+     window.addEventListener("scroll",()=>{
+      if(window.scrollY > 100){
+             setactivetopbar(true)
+      }else{
+             setactivetopbar(false)
+      }
+     })
+   },[]);
+  //  -------------------text-editor----------------
+  const [content, setContent] = useState("");
+  const [codeInput, setCodeInput] = useState("<p>Start editing...</p>");
+  const [renderedCSS, setRenderedCSS] = useState(""); // For storing CSS content
+  const [isCodeView, setIsCodeView] = useState(false); // Flag to toggle between code view and rich text view
+
+  // Function to handle the conversion of code (HTML + CSS) into rendered HTML content for the Text Editor
+  const handleCodeToDesign = () => {
+    const htmlMatch = codeInput.match(/<style>(.*?)<\/style>/s);
+    const css = htmlMatch ? htmlMatch[1] : "";
+    setRenderedCSS(css);
+
+    const htmlWithoutCss = codeInput.replace(/<style>.*?<\/style>/s, "").trim();
+    setContent(htmlWithoutCss);
+    setIsCodeView(false); // Set code view to false (rich text mode)
+    setActiveTab("text");
+  };
+
+  useEffect(() => {
+    if (renderedCSS) {
+      const styleElement = document.getElementById("dynamic-css");
+      styleElement.innerHTML = renderedCSS;
+    }
+  }, [renderedCSS]);
+
+  // Function to update the content in the text editor and sync it to code editor
+  const handleTextEditorChange = (newContent) => {
+    setContent(newContent);
+
+    const htmlContent = newContent;
+    setCodeInput(`<style>${renderedCSS}</style>` + htmlContent);
+  };
+
+  //  ---------------customer suggestion---------------------
+  const [preview, setPreview] = useState("");
+  const [billingPreview, setBillingPreview] = useState("");
+  const [shippingPreview, setShippingPreview] = useState("");
+
+//   const customerSuggestions = [
+//     { 
+//       name: "Zobaer Ahmmed", 
+//       billing: `Zobaer Ahmmed
+// Manager of Marketing
+// RalcoRZ Performance
+// +8801706515936
+// zobaer.ralcorz@gmail.com
+// House# 07(3rd Floor), Road# 30, Sector# 07,
+// Uttara Model Town, Dhaka - 1230, Bangladesh.`,
+//       shipping: `Zobaer Ahmmed
+// Manager of Marketing
+// RalcoRZ Performance
+// +8801706515936
+// House# 07(3rd Floor), Road# 30, Sector# 07,
+// Uttara Model Town, Dhaka - 1230, Bangladesh.`,
+//     },
+//     // Add more customers here if needed
+//   ];
+
+// --------------------------product-suggestion----------------------
+const [searchTerm, setSearchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+const data = [
+  {
+    id: 1,
+    product: {
+      image: "https://isomorphic-furyroad.s3.amazonaws.com/public/products/modern/3.webp",
+      name: "35L Industrial Dehumidifier",
+      category: "Electronics",
+    },
+    model: "Model X",
+    brand: "Brand A",
+    origin: "USA",
+    rating: 4.5,
+    rating_number:200,
+    sku: "SKU12345",
+    stock: 100,
+    purchasePrice: "$180",
+    lastSalesPrice: "$200",
+    offerSalesPrice: "$190",
+    salesPrice: "$222",
+    warranty: "2 years",
+    quantity: 1,
+    unitPrice: 250.0,
+    barcode: "SKU12345",
+    discount: 0,
+    tax: 10,
+    createDate: "21-October-2023",
+    create_time: "08:20 PM",
+    createdBy: "Abu Said Shihab",
+    publishDate: "21-October-2023",
+    publish_time: "08:20 PM",
+    publishedBy: "Abu Said Shihab",
+    updateby: "Zobaer Ahmmed",
+    updateDate: "21-October-2023",
+    update_time: "08:20 PM",
+    authorized: "Pending",
+    visibility: "Draft",
+    status: "Inactive",
+  },
+  {
+    id: 2,
+    product: {
+      image: "https://isomorphic-furyroad.s3.amazonaws.com/public/products/modern/11.webp",
+      name: "35L Industrial Dehumidifier",
+      category: "Furniture",
+    },
+    model: "Model Y",
+    brand: "Brand B",
+    origin: "China",
+    rating: 3.8,
+    sku: "SKU67890",
+    quantity: 1,
+    unitPrice: 250.0,
+    barcode: "SKU12345",
+    discount: 0,
+    tax: 10,
+    rating_number:120,
+    stock: 50,
+    purchasePrice: "$250",
+    lastSalesPrice: "$280",
+    offerSalesPrice: "$260",
+    salesPrice: "$333",
+    warranty: "1 year",
+    createDate: "21-October-2023",
+    create_time: "08:20 PM",
+    createdBy: "Abu Said Shihab",
+    publishDate: "21-October-2023",
+    publish_time: "08:20 PM",
+    publishedBy: "Abu Said Shihab",
+    updateby: "Zobaer Ahmmed",
+    updateDate: "21-October-2023",
+    update_time: "08:20 PM",
+    authorized: "Approved",
+    visibility: "Publish",
+    status: "Active",
+  },
+];
+  // const products = [
+  //   {
+  //     id:1,
+  //     barcode: "SKU12345",
+  //     model: "Model X",
+  //     name: "35L Industrial Dehumidifier",
+  //     category: "Electronics",
+  //     brand: "Brand A",
+  //     origin: "USA",
+  //     rating: 4.5,
+  //     reviews: 100,
+  //     image: "https://cdn.prod.website-files.com/622327bc87949d02598242bf/63ee9d9164fe2c5db018d68a_food-beverage-mobile.webp",
+  //     stock: 25,
+  //     quantity: 1,
+  //     unitPrice: 250.0,
+  //     discount: 0,
+  //     tax: 10,
+  //   },
+  //   {
+  //     id:2,
+  //     barcode: "SKU67890",
+  //     model: "Model Y",
+  //     name: "30L Industrial Dehumidifier",
+  //     category: "Furniture",
+  //     brand: "Brand B",
+  //     origin: "China",
+  //     rating: 3.8,
+  //     reviews: 50,
+  //     image: "https://xphotography.ca/wp-content/uploads/2024/01/Costin_The_Future_of_Product_Photography_Predictions_and_Emergi_cd96f94c-9555-419d-937f-38a1c46ad574-1024x1024.jpg",
+  //     stock: 15,
+  //     quantity: 1,
+  //     unitPrice: 200.0,
+  //     discount: 0,
+  //     tax: 8,
+  //   },
+  // ];
+
+  
+
+  // const handleQuantityChange = (index, delta) => {
+  //   setSelectedProducts((prev) =>
+  //     prev.map((product, i) =>
+  //       i === index
+  //         ? { ...product, quantity: Math.max(1, product.quantity + delta) }
+  //         : product
+  //     )
+  //   );
+  // };
+
+  // const handleDiscountChange = (index, value) => {
+  //   setSelectedProducts((prev) =>
+  //     prev.map((product, i) =>
+  //       i === index ? { ...product, discount: value } : product
+  //     )
+  //   );
+  // };
+
+  // const handleRemoveProduct = (index) => {
+  //   setSelectedProducts((prev) => prev.filter((_, i) => i !== index));
+  // };
+// -----------product name popup-----------------
+const [selectedProduct, setSelectedProduct] = useState(null);
+const [showPopup, setShowPopup] = useState(false);
+const handleEditClick = (product) => {
+  setSelectedProduct(product);
+  setShowPopup(true);
+};
+const customers = [
+  {
+    name: "Zobaer Ahmmed",
+    position: "Manager of Marketing",
+    company: "RalcoRZ Performance",
+    phone: "+8801706515936",
+    email: "zobaer.ralcorz@gmail.com",
+    address: `House# 07(3rd Floor), Road# 30, Sector# 07,
+Uttara Model Town, Dhaka - 1230, Bangladesh.`,
+  },
+  // Add more customers if needed
+];
+
+const handlePopupClose = () => {
+  setShowPopup(false);
+  setSelectedProduct(null);
+};
+
+const handleInputChange2 = (field, value) => {
+  setSelectedProduct((prev) => ({ ...prev, [field]: value }));
+};
+// --------------------disocunt--------------
+
+// const [selectedProducts, setSelectedProducts] = useState(initialProducts);
+const [isDiscountPopupOpen, setDiscountPopupOpen] = useState(false);
+const [currentProduct, setCurrentProduct] = useState(null);
+
+const handleDiscountClick = (product) => {
+  setCurrentProduct(product);
+  setDiscountPopupOpen(true);
+};
+
+// const handleApplyDiscount = (discount, coupon, description) => {
+//   const updatedProducts = selectedProducts.map((prod) => {
+//     if (prod === currentProduct) {
+//       return { ...prod, discount, coupon, description };
+//     }
+//     return prod;
+//   });
+//   setSelectedProducts(updatedProducts);
+// };
+// ---------------tax popup------------------
+const [isTaxPopupOpen, setTaxPopupOpen] = useState(false);
+// const [selectedProduct, setSelectedProduct] = useState(null);
+
+const openTaxPopup = (product) => {
+  setSelectedProduct(product);
+  setTaxPopupOpen(true);
+};
+
+// const applyTax = (calculatedTax, taxType, description) => {
+//   // Update the tax field of the selected product
+//   const updatedProduct = { ...selectedProduct, tax: calculatedTax };
+//   // Logic to save updatedProduct back to products array
+//   setTaxPopupOpen(false);
+// };
+// ---------------------other-charges--------------
+const [otherCharges, setOtherCharges] = useState(0); // Default charges
+const [selectedTaxAmount, setSelectedTaxAmount] = useState(0);
+const [description, setDescription] = useState("");
+
+const handleEditClick2 = () => {
+  setIsPopupOpen(true);
+};
+
+const handlePopupClose2 = () => {
+  setIsPopupOpen(false);
+};
+
+const handleApplyChanges = (newTaxAmount, newDescription) => {
+  const totalTax = (otherCharges * newTaxAmount) / 100;
+  setSelectedTaxAmount(totalTax);
+  setDescription(newDescription);
+  setIsPopupOpen(false);
+};
+
+const totalAmount = otherCharges + selectedTaxAmount;
+// ------------------------all-discount-------------------
+const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  const openEditor = () => {
+    setIsEditorOpen(true);
+  };
+
+  const closeEditor = () => {
+    setIsEditorOpen(false);
+  };
+  // ------------------hnadle-------paymnet-------------
+  const [popupVisible, setPopupVisible] = useState(false);
+
+  const handleShowPopup = () => {
+    setPopupVisible(true);
+  };
+
+  const handleClosePopup = () => {
+    setPopupVisible(false);
+  };
+  // const [selectedProducts, setSelectedProducts] = useState([]);
+  // const [currentProduct, setCurrentProduct] = useState(null);
+  // const [isTaxPopupOpen, setTaxPopupOpen] = useState(false);
+  // const [isDiscountPopupOpen, setDiscountPopupOpen] = useState(false);
+
+  const handleAddProduct = (product) => {
+    const existingProductIndex = selectedProducts.findIndex(
+      (p) => p.id === product.id
+    );
+
+    if (existingProductIndex > -1) {
+      const updatedProducts = [...selectedProducts];
+      updatedProducts[existingProductIndex].quantity += 1;
+      setSelectedProducts(updatedProducts);
+    } else {
+      setSelectedProducts([
+        ...selectedProducts,
+        { ...product, quantity: 1, discount: 0, tax: 0 },
+      ]);
+    }
+  };
+  const handleQuantityChange = (index, change) => {
+    const updatedProducts = [...selectedProducts];
+    const product = updatedProducts[index];
+    
+    // Ensure that quantity is always >= 0
+    if (product.quantity + change >= 0) {
+      product.quantity += change;
+      setSelectedProducts(updatedProducts);
+    }
+  };
+  
+  const handleTaxChange = (index, value) => {
+    const updatedProducts = [...selectedProducts];
+    updatedProducts[index].tax = value;
+    setSelectedProducts(updatedProducts);
+  };
+
+  const handleDiscountChange = (index, value) => {
+    const updatedProducts = [...selectedProducts];
+    updatedProducts[index].discount = value;
+    setSelectedProducts(updatedProducts);
+  };
+
+  const handleRemoveProduct = (index) => {
+    const updatedProducts = selectedProducts.filter((_, i) => i !== index);
+    setSelectedProducts(updatedProducts);
+  };
+  const applyTax = (productId, taxValue) => {
+    const updatedProducts = selectedProducts.map((product) =>
+      product.id === productId ? { ...product, tax: taxValue } : product
+    );
+    setSelectedProducts(updatedProducts);
+    setTaxPopupOpen(false);
+  };
+
+  const handleApplyDiscount = (productId, discountValue) => {
+    const updatedProducts = selectedProducts.map((product) =>
+      product.id === productId ? { ...product, discount: discountValue } : product
+    );
+    setSelectedProducts(updatedProducts);
+    setDiscountPopupOpen(false);
+  };
+  const [discount, setDiscount] = useState(0);   // Discount state as a percentage
+ // Function to apply discount changes
+  const applyDiscountChanges = (discountResult, discountType, couponCode, discountDescription) => {
+    setDiscount(discountResult);  // Update discount state with new discount result
+  };
+    // Function to apply the discount changes
+    const handleApplyDiscount2 = (discountResult, discountType, couponCode, discountDescription) => {
+      setDiscount(discountResult);  // Update discount in the parent component
+    };
+  const calculateTotal = () => {
+    let productTotal = selectedProducts.reduce((total, product) => {
+      // Calculate the tax amount on the product price after discount
+      const taxAmount = (product.unitPrice * product.quantity * product.tax) / 100;
+      
+      // Subtotal before discount and tax
+      const productTotal = product.unitPrice * product.quantity;
+      
+      // Total for each product (price * quantity - discount + tax)
+      const totalAmount = productTotal - product.discount + taxAmount;
+      
+      return total + totalAmount;
+    }, 0);
+  
+    // Apply the discount globally to the total
+    const discountAmount = (discount / 100) * productTotal; // Apply the global discount
+    productTotal -= discountAmount; // Subtract discount from the total
+  
+    return productTotal;
+  };
+  
+  
+
+  const calculateUnitCost = (product) => {
+    const taxAmount = (product.unitPrice * product.quantity * product.tax) / 100;
+    const totalAmount =
+      product.unitPrice * product.quantity - product.discount + taxAmount;
+    return totalAmount / product.quantity;
+  };
+// ===================calculate-grand-total----------------------
+ // Calculate the Grand Total
+ const calculateGrandTotal = () => {
+  const subTotal = calculateTotal();
+  const grandTotal = subTotal + otherCharges - discount;
+  return grandTotal;
+};
+// =============================product-data================================
+ // Static list of customer data
+ const customerSuggestions = [
+  { id: 1, name: "Alice Johnson" },
+  { id: 2, name: "Bob Smith" },
+  { id: 3, name: "Charlie Brown" },
+  { id: 4, name: "David Lee" },
+  { id: 5, name: "Eva White" },
+  // Add more customers as needed
+];
+
+// State for managing dropdown visibility, selected customer, and search query
+const [isOpen, setIsOpen] = useState(false); // Dropdown open state // Selected customer
+
+
+// Handle adding the selected customer (dummy function)
+const customersData = [
+  {
+    name: "Zobaer Ahmmed",
+    position: "Manager of Marketing",
+    company: "RalcoRZ Performance",
+    phone: "+8801706515936",
+    email: "zobaer.ralcorz@gmail.com",
+    address: `House# 07(3rd Floor), Road# 30, Sector# 07, 
+Uttara Model Town, Dhaka - 1230, Bangladesh.`,
+  },
+];
+const [dropdownOpen, setDropdownOpen] = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
+const [selectedCustomer, setSelectedCustomer] = useState(null);
+const [previewText, setPreviewText] = useState("");
+const [isPopupOpen, setIsPopupOpen] = useState(false);
+const [customer_popup,set_customerpopup]=useState(false)
+const [customerList, setCustomerList] = useState(customers);
+
+const dropdownRef = useRef(null);
+
+// New Customer State
+const [newCustomer, setNewCustomer] = useState({
+  name: "",
+  position: "",
+  company: "",
+  phone: "",
+  email: "",
+  address: "",
+});
+
+// Close dropdown when clicking outside
+useEffect(() => {
+  function handleClickOutside(event) {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setDropdownOpen(false);
+    }
+  }
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
+// Filter customers based on search input
+const filteredCustomers = customerList.filter((customer) =>
+  customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+// Handle customer selection
+const handleCustomerSelect = (customer) => {
+  
+  setSelectedCustomer(customer);
+  setDropdownOpen(false);
+  setSearchQuery("")
+  setPreviewText(
+    `${customer.name}
+${customer.position}
+${customer.company}
+${customer.phone}
+${customer.email}
+${customer.address}`
+  );
+  setShippingPreview(
+    `${customer.name}
+${customer.position}
+${customer.company}
+${customer.phone}
+${customer.email}
+${customer.address}`
+  );
+  setBillingPreview(
+    `${customer.name}
+${customer.position}
+${customer.company}
+${customer.phone}
+${customer.email}
+${customer.address}`
+  );
+};
+
+
+
+// Open and Close Popup
+const togglePopup = () => set_customerpopup((prev) => !prev);
+
+// Handle Input Change for New Customer
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+  
+    // Filter products based on the search term
+    const filtered = data.filter(
+      (product) =>
+        product.product.name.toLowerCase().includes(value.toLowerCase()) ||
+        product.barcode.includes(value) ||
+        product.model.toLowerCase().includes(value.toLowerCase())
+    );
+  
+    setFilteredProducts(filtered);
+  
+    // Show suggestions only if there's a search term
+    if (value) {
+      setShowSuggestions(true); // Show suggestions when typing
+    }
+  };
+  
+  const handleProductSelect = (product) => {
+    // Check if product already exists in selectedProducts
+    const existingProduct = selectedProducts.find(
+      (p) => p.id === product.id // Assuming product has a unique 'id'
+    );
+  
+    if (existingProduct) {
+      // If product exists, increase the quantity
+      const updatedProducts = selectedProducts.map((p) =>
+        p.id === product.id
+          ? { ...p, quantity: p.quantity + 1 } // Increase quantity by 1
+          : p
+      );
+      setSelectedProducts(updatedProducts); // Update state with modified quantity
+    } else {
+      // If product doesn't exist, add it to the selectedProducts list
+      setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]); // Add with initial quantity 1
+    }
+  
+    // Clear the search term and hide suggestions
+    setSearchTerm(""); 
+    setShowSuggestions(false); // Hide suggestions when a product is selected
+  };
+// Handle New Customer Submission
+const handleAddCustomer = () => {
+  if (newCustomer.name.trim()) {
+    setCustomerList((prev) => [...prev, newCustomer]);
+    setNewCustomer({ name: "", position: "", company: "", phone: "", email: "", address: "" });
+    setIsPopupOpen(false);
+  }
+};
+  return (
+    <section className='w-full h-[100vh] flex font-poppins'>
+        <section className={activesidebar ? 'w-0 h-[100vh] transition-all duration-300 overflow-hidden':'w-0 xl:w-[20%] transition-all duration-300 h-[100vh]'}>
+            <Dashboardleftside/>
+        </section>
+        <section className={activesidebar ? 'w-[100%] h-[100vh] overflow-y-auto transition-all duration-300':' transition-all duration-300 w-[100%] overflow-y-auto xl:w-[85%] h-[100vh]'}>
+        <Dashboradheader/> 
+       <section className='w-[100%] m-auto py-[20px] xl:py-[40px] px-[30px]'>
+       <div className='w-full flex justify-between items-center'>
+        <div>
+              <h1 className='text-[20px] lg:text-[20px] font-[600] mb-[8px]'>New Product Order</h1>
+          <ul className='flex justify-center items-center gap-[10px] text-neutral-500 text-[13px] lg:text-[14px]'>
+            <li>Dashboard</li>
+            <li><IoIosArrowForward/></li>
+            <li>Products</li>
+            <li><IoIosArrowForward/></li>
+            <li>New Order</li>
+          </ul>
+        </div>
+       </div>
+       {/* ------------------new customer table----------------- */}
+         <section className='pt-[40px] pb-[30px]'>
+            {/* -------------------form---------------------- */}
+ <form action="" className="pt-[15px] lg:pt-[20px]">
+      {/* Customer Information */}
+      <div className="">
+      <h2 className="text-lg font-medium mb-2">Customer Selection</h2>
+
+      <div className="flex items-center gap-[10px]">
+      <div className="relative w-full" ref={dropdownRef}>
+        {/* Custom Dropdown */}
+        <div
+          className="flex items-center justify-between border border-gray-300 bg-white p-3 rounded cursor-pointer shadow-sm"
+          onClick={() => setDropdownOpen((prev) => !prev)}
+        >
+          <span className="text-gray-700 text-[14px] 2xl:text-[15px] font-medium">
+            {selectedCustomer?.name || "Select Customer"}
+          </span>
+          <FiChevronDown className="text-gray-500" />
+        </div>
+
+        {/* Dropdown with Search */}
+        {dropdownOpen && (
+          <div className="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-md mt-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="p-2 border-b border-gray-300 outline-brand_color w-full"
+              placeholder="Search Customer"
+            />
+
+            {/* Filtered Customers List */}
+            {filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleCustomerSelect(customer)}
+                  className="p-2 hover:bg-gray-100 cursor-pointer text-gray-700 text-[14px] 2xl:text-[15px] font-medium"
+                >
+                  {customer.name}
+                </div>
+              ))
+            ) : (
+              <div className="p-2 text-gray-500">No matching customers found.</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Add Customer & Preview */}
+      <div className="flex gap-4">
+        <div
+            onClick={togglePopup}
+          className="h-[45px] w-[45px] cursor-pointer bg-brand_color text-white rounded-[5px] flex items-center justify-center"
+        >
+          <FiPlus className="text-[22px]" />
+        </div>
+      </div>
+      </div>
+      <div className="w-full flex gap-[30px] mt-[45px] mb-[20px] lg:flex-row flex-col">
+      <div className="w-[100%] lg:w-[50%]">
+        <label className="text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600">
+        Preview
+        </label>
+        <textarea
+        placeholder="Preview"
+        readOnly
+        value={previewText}
+        className="w-full mt-[8px] rounded-[5px] placeholder-gray-400 outline-brand_color text-[16px] leading-[26px] h-full border-[1px] border-[#eee] p-[15px]"
+      />
+      </div>
+        {/* Popup Modal */}
+        {customer_popup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1000000000] flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[400px]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Add New Customer</h2>
+              <FiX className="cursor-pointer text-gray-500" onClick={togglePopup} />
+            </div>
+
+            {/* Form Fields */}
+            {["name", "position", "company", "phone", "email", "address"].map((field) => (
+              <input
+                key={field}
+                type="text"
+                name={field}
+                value={newCustomer[field]}
+                onChange={handleInputChange}
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]"
+              />
+            ))}
+
+            {/* Add Customer Button */}
+            <button
+              onClick={handleAddCustomer}
+              className="w-full bg-brand_color mt-[15px] text-white p-2 rounded font-medium"
+            >
+              Add Customer
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="w-[100%] lg:w-[50%]">
+        <div className='w-full mb-[10px]'>
+        <label className="text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600">
+            PO Number
+        </label>
+        <input type="text"placeholder='PO Number'  className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]" />
+        </div>
+        <div className='w-full mb-[10px]'>
+        <label className="text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600">
+        Sales Date
+        </label>
+        <input type="text"placeholder='Sales Date'  className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]" />
+        </div>
+        <div className='w-full mb-[10px]'>
+        <label className="text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600">
+        Sales By
+        </label>
+        <input type="text"placeholder='Sales By'  className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]" />
+        </div>
+        <div className='w-full mb-[10px]'>
+        <label className="text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600">
+        Reference No
+        </label>
+        <input type="text"placeholder='Reference No'  className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]" />
+        </div>
+      </div>
+</div>
+    </div>
+
+
+
+
+      {/* Billing and Shipping Preview */}
+{/* Billing and Shipping Preview */}
+<div className="w-full flex gap-[30px] mt-[45px] mb-[20px] lg:flex-row flex-col">
+      <div className="w-[100%] lg:w-[50%]">
+        <label className="text-[15px] font-[500] text-gray-600">
+          Billing Preview
+        </label>
+        <textarea
+          placeholder="Billing Preview"
+          value={billingPreview}
+          readOnly
+          className="w-full mt-[8px] rounded-[5px] placeholder-gray-400 outline-brand_color text-[16px] leading-[26px] h-[250px] border-[1px] border-[#eee] p-[15px]"
+        ></textarea>
+      </div>
+      <div className="w-[100%] lg:w-[50%]">
+        <label className="text-[15px] font-[500] text-gray-600">
+          Shipping Preview
+        </label>
+        <textarea
+          placeholder="Shipping Preview"
+          value={shippingPreview}
+          readOnly
+          className="w-full mt-[8px] rounded-[5px] placeholder-gray-400 outline-brand_color h-[250px] text-[16px] border-[1px] leading-[26px] border-[#eee] p-[15px]"
+        ></textarea>
+      </div>
+</div>
+
+      {/* Product Search */}
+{/* Product Search */}
+{/* Product Search */}
+<div className="w-full mb-[20px] relative">
+  <label className="text-[15px] font-[500] text-gray-600">Product Search</label>
+  <input
+    type="text"
+    value={searchTerm}
+    onChange={handleInputChange}
+    placeholder="Search Product"
+    className="w-full mt-[8px] rounded-[5px] placeholder-gray-400 outline-brand_color text-[14px] h-[45px] border-[1px] border-[#eee] p-[15px]"
+  />
+  {showSuggestions && filteredProducts.length > 0 && (
+    <ul className="absolute w-full mt-[8px] bg-white border border-gray-300 rounded-[5px] max-h-[200px] overflow-y-auto z-10">
+      {filteredProducts.map((product, index) => (
+        <li
+          key={index}
+          onClick={() => handleProductSelect(product)} // Hide suggestions after selecting
+          className="p-[10px] text-[14px] hover:bg-gray-100 cursor-pointer"
+        >
+          {product.barcode} - [{product.model}] - {product.name}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
+
+{/* Selected Products Table */}
+<div>
+      <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200 w-full overflow-x-auto border-[1px] border-[#eee] dark:divide-gray-700">
+        <thead className="bg-gray-100 dark:bg-gray-800">
+          <tr>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">ID</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Product</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Model</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Brand</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Quantity</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Origin</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Rating</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">SKU</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Stock</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Purchase Price</th>
+            <th className="px-4 py-2 text-left text-sm text-nowrap font-medium text-gray-700">Last Sales Price</th>
+            <th className="px-4 py-2 text-left text-sm  text-nowrap font-medium text-gray-700">Offer Sales Price</th>
+          </tr>
+        </thead>
+        {/* <td className="p-2 flex gap-2 justify-center mb-[20px]">
+                    <div className="w-full bg-[whitesmoke] border flex justify-center">
+                      <div
+                        onClick={() => handleQuantityChange(index, -1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <LuMinus />
+                      </div>
+                      <span className="bg-white px-4 py-1 w-[60%] text-center">
+                        {product.quantity}
+                      </span>
+                      <div
+                        onClick={() => handleQuantityChange(index, 1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <FiPlus />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-2">{product.unitPrice.toFixed(2)}</td>
+                  <td className="p-2">{product.unitPrice.toFixed(2)}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={product.discount}
+                      onChange={(e) => handleDiscountChange(index, +e.target.value)}
+                      className="w-full border rounded p-2 cursor-pointer text-sm text-center bg-[whitesmoke]"
+                      title="Click to change the discount"
+                      onClick={() => {
+                        setCurrentProduct(product);
+                        setDiscountPopupOpen(true);
+                      }}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={product.tax}
+                      onChange={(e) => handleTaxChange(index, +e.target.value)}
+                      onClick={() => {
+                        setCurrentProduct(product);
+                        setTaxPopupOpen(true);
+                      }}
+                      className="w-full border rounded p-2 cursor-pointer text-sm text-center bg-[whitesmoke]"
+                      title="Click to change the tax"
+                    />
+                  </td>
+                  <td className="p-2">{Math.round(taxAmount)}</td>
+                  <td className="p-2">{calculateUnitCost(product).toFixed(2)}</td>
+                  <td className="p-2">{Math.round(totalAmount)}</td>
+
+                  <td className="p-2 flex justify-center items-center">
+                    <div
+                      onClick={() => handleRemoveProduct(index)}
+                      className="px-[7px] mt-[10px] w-auto py-[5px] bg-red-500 text-white cursor-pointer rounded-[3px]"
+                    >
+                      <MdOutlineDelete className="text-[22px]" />
+                    </div>
+                  </td> */}   
+        <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
+          {selectedProducts.map((row,index) => {
+             const taxAmount =
+             (row.unitPrice * row.quantity * row.tax) / 100;
+           const totalAmount =
+           row.unitPrice * row.quantity -
+           row.discount +
+             taxAmount;
+            return(
+              <tr key={row.id} className="dark:hover:bg-gray-800">
+              <td className="px-4 py-4 text-sm">{row.id}</td>
+              <td className="px-4 py-4 text-sm flex items-center pr-[40px]">
+                <img
+                  src={row.product.image}
+                  alt="Product"
+                  className="w-10 h-10 rounded-md mr-2"
+                />
+                <div>
+                  <div className="font-medium text-nowrap">{row.product.name}</div>
+                  <div className="text-xs text-nowrap text-gray-500">{row.product.category}</div>
+                </div>
+              </td>
+              <td className="px-4 py-4 text-sm">{row.model}</td>
+              <td className="px-4 py-4 text-sm">{row.brand}</td>
+              <td className=" ">
+                    <div className="w-full bg-[whitesmoke] border flex justify-center">
+                      <div
+                        onClick={() => handleQuantityChange(index, -1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <LuMinus />
+                      </div>
+                      <span className="bg-white px-4 py-1 w-[60%] text-center">
+                        {row.quantity}
+                      </span>
+                      <div
+                        onClick={() => handleQuantityChange(index, 1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <FiPlus />
+                      </div>
+                    </div>
+                  </td>
+              <td className="px-4 py-4 text-sm">{row.origin}</td>
+              <td className="px-4 py-4 text-sm">
+                {row.rating} ⭐ ({row.rating_number})
+              </td>
+              <td className="px-4 py-4 text-sm">{row.sku}</td>
+              <td className="px-4 py-4 text-sm">
+              <div className="">
+                              <div className="relative w-full h-2 bg-gray-200 rounded-full">
+                                <div
+                                  className={`absolute h-full rounded-full ${
+                                    row.stock > 50
+                                      ? "bg-green-500" // High stock
+                                      : row.stock> 20
+                                      ? "bg-blue-500" // Medium stock
+                                      : row.stock > 10
+                                      ? "bg-yellow-500" // Low stock
+                                      : row.stock > 0
+                                      ? "bg-orange-500" // Very low stock
+                                      : "bg-gray-400" // Out of stock
+                                  }`}
+                                  style={{ width: `${Math.min(row.stock, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-700">
+                                {row.stock > 0
+                                  ? `${row.stock} ${
+                                      row.stock > 1 ? "in stock" : "low stock"
+                                    }`
+                                  : "out of stock"}
+                              </span>
+                            </div>
+              </td>
+              <td className="px-4 py-4 text-sm">{row.purchasePrice}</td>
+              <td className="px-4 py-4 text-sm">{row.lastSalesPrice}</td>
+              <td className="px-4 py-4 text-sm">{row.offerSalesPrice}</td>
+            </tr>
+            )
+          })}
+           
+        </tbody>
+      </table>
+
+        {/* <table className="w-full border border-gray-300">
+        <thead className="bg-table_header dark:bg-gray-800">
+          <tr>
+          <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Name</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Stock</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Quantity</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">LastSales Price</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">AskSales Price</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Discount</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Tax</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Tax Amount</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Unit Cost</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Amount</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Action</th>
+     
+          </tr>
+        </thead>
+          <tbody>
+            {selectedProducts.map((product, index) => {
+              const taxAmount =
+                (product.unitPrice * product.quantity * product.tax) / 100;
+              const totalAmount =
+                product.unitPrice * product.quantity -
+                product.discount +
+                taxAmount;
+
+              return (
+                <tr key={index} className="border-b text-center hover:bg-gray-100">
+                  <td className="p-[6px]">
+                    <div className="flex justify-between gap-[10px] border bg-white p-[10px] items-center">
+                      <div>
+                        <img
+                          className="w-[70px] h-[50px]"
+                          src={product.image}
+                          alt=""
+                        />
+                      </div>
+                      <div className="text-left">
+                        <h2 className="font-[500] text-nowrap text-brand_color">
+                          {product.name}
+                        </h2>
+                        <p className="text-nowrap">{product.category}</p>
+                      </div>
+                      <div
+                        className="text-gray-500"
+                        onClick={() => handleEditClick(product)}
+                      >
+                        <FiEdit className="text-[18px] cursor-pointer" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-2">{product.stock}</td>
+                  <td className="p-2 flex gap-2 justify-center mb-[20px]">
+                    <div className="w-full bg-[whitesmoke] border flex justify-center">
+                      <div
+                        onClick={() => handleQuantityChange(index, -1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <LuMinus />
+                      </div>
+                      <span className="bg-white px-4 py-1 w-[60%] text-center">
+                        {product.quantity}
+                      </span>
+                      <div
+                        onClick={() => handleQuantityChange(index, 1)}
+                        className="bg-gray-300 cursor-pointer p-2 flex items-center justify-center"
+                      >
+                        <FiPlus />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-2">{product.unitPrice.toFixed(2)}</td>
+                  <td className="p-2">{product.unitPrice.toFixed(2)}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={product.discount}
+                      onChange={(e) => handleDiscountChange(index, +e.target.value)}
+                      className="w-full border rounded p-2 cursor-pointer text-sm text-center bg-[whitesmoke]"
+                      title="Click to change the discount"
+                      onClick={() => {
+                        setCurrentProduct(product);
+                        setDiscountPopupOpen(true);
+                      }}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={product.tax}
+                      onChange={(e) => handleTaxChange(index, +e.target.value)}
+                      onClick={() => {
+                        setCurrentProduct(product);
+                        setTaxPopupOpen(true);
+                      }}
+                      className="w-full border rounded p-2 cursor-pointer text-sm text-center bg-[whitesmoke]"
+                      title="Click to change the tax"
+                    />
+                  </td>
+                  <td className="p-2">{Math.round(taxAmount)}</td>
+                  <td className="p-2">{calculateUnitCost(product).toFixed(2)}</td>
+                  <td className="p-2">{Math.round(totalAmount)}</td>
+
+                  <td className="p-2 flex justify-center items-center">
+                    <div
+                      onClick={() => handleRemoveProduct(index)}
+                      className="px-[7px] mt-[10px] w-auto py-[5px] bg-red-500 text-white cursor-pointer rounded-[3px]"
+                    >
+                      <MdOutlineDelete className="text-[22px]" />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table> */}
+
+        {isTaxPopupOpen && (
+          <TaxPopup
+            isOpen={isTaxPopupOpen}
+            onClose={() => setTaxPopupOpen(false)}
+            product={currentProduct}
+            onApplyTax={(taxValue) => applyTax(currentProduct.id, taxValue)}
+          />
+        )}
+
+        {isDiscountPopupOpen && (
+          <DiscountPopup
+            isOpen={isDiscountPopupOpen}
+            onClose={() => setDiscountPopupOpen(false)}
+            product={currentProduct}
+            onApplyDiscount={(discountValue) => handleApplyDiscount(currentProduct.id, discountValue)}
+          />
+        )}
+      </div>
+    </div>
+
+      <div className="border border-gray-300 mb-[20px] mt-[30px]">
+
+      <div className="flex">
+ 
+        <div className="w-1/2 border-r  border-gray-300 p-4">
+          <div className='w-full h-[100%] flex justify-center items-center'>
+          <h2 className="font-semibold text-center">Summary</h2>
+          </div>
+        </div>
+
+        <div className="w-1/2 p-4">
+          <div className="flex justify-between items-center border-b border-gray-300 py-2">
+            <span className="font-medium text-gray-700">Sub Total:</span>
+            <span className="text-gray-700">{Math.round(calculateTotal() * 100) / 100}
+            </span>
+          </div>
+
+  <div className="flex justify-between items-center border-b border-gray-300 py-2">
+    <span className="font-medium text-gray-700 text-center flex justify-center items-center gap-[8px]">
+      Other Charges:
+      <FiEdit
+        className="text-[18px] text-brand_color cursor-pointer"
+        onClick={handleEditClick2} 
+      />
+    </span>
+    <span className="text-gray-700">{totalAmount.toFixed(2)}</span>
+  </div>
+          <div className="flex justify-between items-center border-b border-gray-300 py-2">
+            <span className="font-medium text-gray-700  flex justify-center items-center gap-[8px]">Discount on All:<FiEdit className='text-[18px] text-brand_color'  onClick={openEditor}/></span>
+            <span className="text-gray-700">{discount}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="font-medium text-gray-900">Grand Total:</span>
+            <span className="text-gray-900 font-bold">{calculateGrandTotal().toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+{/* -=----------------------------other-changes--------------- */}
+{isPopupOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[600px]">
+            <h2 className="text-xl font-semibold mb-4 text-brand_color">Other Charges Edit Window</h2>
+
+            <div className="flex gap-4">
+              {/* Left Side */}
+              <div className="flex-1">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Amount</label>
+                  <input
+                    type="number"
+                    value={otherCharges}
+                    onChange={(e) => setOtherCharges(Number(e.target.value))}
+                    className="w-full border rounded px-3 py-2 bg-gray-50"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Tax Amount</label>
+                  <select
+                    value={selectedTaxAmount}
+                    onChange={(e) => setSelectedTaxAmount(Number(e.target.value))}
+                    className="w-full border rounded px-3 py-2 bg-gray-50"
+                  >
+                    <option value={0}>No Tax</option>
+                    <option value={10}>Tax 10%</option>
+                    <option value={15}>Tax 15%</option>
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full border rounded px-3 py-2 bg-gray-50"
+                  />
+                </div>
+              </div>
+
+              {/* Right Side */}
+              <div className="flex-1 bg-gray-100 p-4 rounded">
+                <h3 className="text-lg font-semibold mb-4">Summary</h3>
+                <div className="mb-2 flex justify-between">
+                  <span>Charges Amount:</span>
+                  <span>${otherCharges.toFixed(2)}</span>
+                </div>
+                <div className="mb-2 flex justify-between">
+                  <span>Tax:</span>
+                  <span>${selectedTaxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-brand_color">
+                  <span>Total Amount:</span>
+                  <span>${totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={handlePopupClose}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApplyChanges(selectedTaxAmount, description)}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* -----------------------all discount------------- */}
+<DiscountEditorPopup
+        isDiscountEditorOpen={isEditorOpen}           // Pass state for popup visibility
+        closeDiscountEditor={closeEditor}             // Pass function to close popup
+        totalAmount={totalAmount}                     // Pass the total amount to DiscountEditorPopup
+        applyDiscountChanges={handleApplyDiscount2}    // Function to apply the discount changes
+      />
+      {/* Payment Details */}
+      <div className="w-full mb-[20px]">
+        <h3 className="text-[16px] font-[600] mb-[10px]">Previous Payments</h3>
+        <table className="w-full border-collapse border border-[#eee] text-[14px]">
+        <thead className="bg-table_header dark:bg-gray-800">
+        <tr>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Date</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Payment Type</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Payment Note</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Payment</th>
+              <th className="px-4 py-2 text-left text-nowrap uppercase text-sm font-medium text-table_title dark:text-gray-300">Action</th>
+            </tr>
+        </thead>
+          <thead className="bg-gray-100">
+          
+          </thead>
+          <tbody>
+            {/* Example Row */}
+            <tr>
+              <td className="border border-[#eee] p-[10px]">2023-12-15</td>
+              <td className="border border-[#eee] p-[10px]">Credit Card</td>
+              <td className="border border-[#eee] p-[10px]">Monthly payment</td>
+              <td className="border border-[#eee] p-[10px]">$50</td>
+              <td className="border flex justify-center items-center border-[#eee] p-[10px]">
+                <div className='px-[7px] w-auto py-[5px] bg-red-500 text-white cursor-pointer rounded-[3px]'>
+                  <MdOutlineDelete className='text-[22px]'/>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Make Payment Section */}
+      <div className="w-full mb-[20px]">
+        
+        <div className="w-full">
+          <label className="text-[15px] font-[500] text-gray-600">
+            Customer Note
+          </label>
+          <SunEditor
+setContents={content}
+onChange={handleTextEditorChange}
+className="mt-2"
+setOptions={{
+  width: "100%",
+  height: 300,
+  placeholder: "Description...", // Custom placeholder name
+  buttonList: [
+    ["undo", "redo"],
+    [
+      {
+        name: "formatBlock",
+        data: [
+          { tag: "P", title: "Paragraph" },
+          { tag: "H1", title: "Heading 1" },
+          { tag: "H2", title: "Heading 2" },
+          { tag: "H3", title: "Heading 3" },
+        ],
+      },
+      "fontSize",
+    ],
+    ["bold", "italic", "underline", "strike"],
+    ["fontColor", "hiliteColor"],
+    ["align", "list", "indent", "outdent"],
+    ["table", "link", "image"],
+    ["codeView"], // Button to toggle code view
+  ],
+  addDefaultStyle: false, // Disable default styles if needed
+}}
+enableCodeView={isCodeView} // If true, enable code view mode
+setDefaultStyle="font-family: 'Poppins', sans-serif; font-size: 16px;" // Set font family to Poppins and font size to 16px
+/>
+
+        </div>
+      </div>
+
+      {/* Submit Section */}
+      <div className="flex justify-end items-center gap-[10px]">
+        <button className="px-[30px] py-[10px] text-black text-[14px] gap-[8px] border-[2px] border-[#eee] flex justify-center items-center rounded-[5px] cursor-pointer">
+          <LuSaveAll className="text-[20px]" />Draft
+        </button>
+        <div
+        className="px-[30px] py-[10px] text-white text-[14px] gap-[8px] bg-brand_color flex justify-center items-center rounded-[5px] cursor-pointer"
+        onClick={handleShowPopup}
+      >
+        Payment
+      </div>
+
+      <div>
+   
+      {popupVisible && <PaymentPopup closePopup={handleClosePopup}  totalAmount={Math.round(calculateTotal() * 100) / 100}
+        totalDiscount={discount}
+        totalTax={totalAmount.toFixed(2)}
+        totalPay={calculateGrandTotal().toFixed(2)}
+        openEditor={openEditor}
+        handleEditClick2={handleEditClick2} />}
+      
+    </div>
+      </div>
+    </form>
+
+
+            {/* -------------------form---------------------- */}
+         </section>
+       {/* ------------------------new customer table-------------------- */}
+       </section>
+        </section>
+    </section>
+  )
+}
+
+export default Bneworder

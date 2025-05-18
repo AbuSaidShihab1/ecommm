@@ -1,0 +1,201 @@
+const TaxPopup = ({ isOpen, onClose, product, onApplyTax }) => {
+  const [taxType, setTaxType] = useState("Exclusive");
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [isCustomTaxEnabled, setIsCustomTaxEnabled] = useState(false);
+  const [customTaxMethod, setCustomTaxMethod] = useState("Fixed");
+  const [customTaxAmount, setCustomTaxAmount] = useState(0);
+  const [description, setDescription] = useState("");
+  const [taxSelection, setTaxSelection] = useState("custom");
+
+  // Store previous selection before custom tax is enabled
+  const [prevTaxSelection, setPrevTaxSelection] = useState("custom");
+  const [prevTaxAmount, setPrevTaxAmount] = useState(10);
+
+  // Handle tax selection change
+  const handleTaxSelection = (value) => {
+    setTaxSelection(value);
+    if (value === "10%") setTaxAmount(10);
+    else if (value === "15%") setTaxAmount(15);
+    else if (value === "no-tax") setTaxAmount(0);
+    else setTaxAmount(10); // Default for custom input
+  };
+
+  // Handle custom tax toggle
+  const toggleCustomTax = () => {
+    if (!isCustomTaxEnabled) {
+      setPrevTaxSelection(taxSelection);
+      setPrevTaxAmount(taxAmount);
+      setTaxSelection("custom");
+      setTaxAmount(0);
+    } else {
+      setTaxSelection(prevTaxSelection);
+      setTaxAmount(prevTaxAmount);
+    }
+    setIsCustomTaxEnabled(!isCustomTaxEnabled);
+  };
+
+  // Calculate tax
+  const calculateTax = () => {
+    const basePrice = product.unitPrice * product.quantity;
+    let standardTax = (basePrice * taxAmount) / 100;
+    let customTax = 0;
+
+    if (isCustomTaxEnabled) {
+      customTax =
+        customTaxMethod === "Percentage"
+          ? (basePrice * customTaxAmount) / 100
+          : Math.min(customTaxAmount, basePrice);
+    }
+
+    if (taxType === "Inclusive") {
+      standardTax = basePrice - basePrice / (1 + taxAmount / 100);
+      if (isCustomTaxEnabled) {
+        customTax = basePrice - basePrice / (1 + customTaxAmount / 100);
+      }
+    }
+
+    return { standardTax, customTax };
+  };
+
+  const { standardTax, customTax } = useMemo(() => calculateTax(), [
+    taxType,
+    taxAmount,
+    customTaxMethod,
+    customTaxAmount,
+    isCustomTaxEnabled,
+    product,
+  ]);
+
+  const finalPrice = useMemo(() => {
+    const basePrice = product.unitPrice * product.quantity;
+    return taxType === "Inclusive"
+      ? basePrice + standardTax + customTax
+      : basePrice - standardTax - customTax;
+  }, [standardTax, customTax, taxType, product]);
+
+  const handleApplyTax = () => {
+    onApplyTax(standardTax + customTax, taxType, description);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 w-full bg-black bg-opacity-50 h-[100vh] overflow-y-auto py-[40px] z-[100000000] flex items-center justify-center">
+      <section className="w-[90%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] rounded-[3px] bg-white m-auto pb-[10px] xl:pb-[20px]">
+        {/* Header */}
+        <div className="border-b-[1px] px-[20px] py-[15px] 2xl:pt-[25px] 2xl:pb-[20px] border-[#eee] flex justify-between items-center">
+          <h1 className="text-[15px] 2xl:text-[18px] font-[500] text-gray-600">Tax</h1>
+          <IoClose className="text-[22px] cursor-pointer text-gray-600 hover:text-gray-800" onClick={onClose} />
+        </div>
+
+        <div className="flex gap-4 px-6 py-[25px]">
+          {/* Left Side - Tax Form */}
+          <div className="flex-1">
+            {/* Tax Type */}
+            <div className="mb-4">
+              <label className="text-neutral-600 font-medium">Tax Type</label>
+              <select
+                value={taxType}
+                onChange={(e) => setTaxType(e.target.value)}
+                className="w-full mt-2 rounded border px-3 py-2 outline-brand_color"
+              >
+                <option value="Exclusive">Exclude</option>
+                <option value="Inclusive">Include</option>
+              </select>
+            </div>
+
+            {/* Tax Selection Dropdown */}
+            <div className="mb-4">
+              <label className="text-neutral-600 font-medium">Select Tax</label>
+              <select
+                value={taxSelection}
+                onChange={(e) => handleTaxSelection(e.target.value)}
+                className="w-full mt-2 rounded border px-3 py-2 outline-brand_color"
+                disabled={isCustomTaxEnabled}
+              >
+                <option value="no-tax">No Tax</option>
+                <option value="10%">10% Tax</option>
+                <option value="15%">15% Tax</option>
+              </select>
+            </div>
+
+            {/* Custom Tax Toggle */}
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="enable-custom-tax"
+                checked={isCustomTaxEnabled}
+                onChange={toggleCustomTax}
+                className="form-checkbox"
+              />
+              <label htmlFor="enable-custom-tax" className="text-sm">
+                Enable Custom Tax
+              </label>
+            </div>
+
+            {/* Custom Tax Fields */}
+            {isCustomTaxEnabled && (
+              <div className="mb-4">
+                <label className="text-neutral-600 font-medium">Custom Tax Method</label>
+                <div className="mt-2 flex gap-2">
+                  <select
+                    value={customTaxMethod}
+                    onChange={(e) => setCustomTaxMethod(e.target.value)}
+                    className="w-full rounded border px-3 py-2 outline-brand_color"
+                  >
+                    <option value="Fixed">Fixed</option>
+                    <option value="Percentage">Percentage</option>
+                  </select>
+                  <input
+                    type="number"
+                    value={customTaxAmount}
+                    onChange={(e) => setCustomTaxAmount(Number(e.target.value))}
+                    className="w-full rounded border px-3 py-2 outline-brand_color"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            <div className="mb-4">
+              <label className="text-neutral-600 font-medium">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full rounded border px-3 py-2 h-[100px] outline-brand_color"
+              />
+            </div>
+          </div>
+
+          {/* Right Side - Summary */}
+          <div className="flex-1 ml-[20px] bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6 rounded-[3px] shadow-2xl border border-blue-300">
+            <h3 className="text-[16px] 2xl:text-[20px] font-bold mb-[20px] text-center text-white drop-shadow-lg">Summary</h3>
+            <div className="flex justify-between mb-[10px] bg-white text-gray-700 p-2 rounded-lg shadow-md">
+              <span className="font-medium">Product Price:</span>
+              <span>{(product.unitPrice * product.quantity).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mb-[10px] bg-white text-gray-700 p-2 rounded-lg shadow-md">
+              <span className="font-medium">Standard Tax:</span>
+              <span>{standardTax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mb-[10px] bg-white text-gray-700 p-2 rounded-lg shadow-md">
+              <span className="font-medium">Custom Tax:</span>
+              <span>{customTax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mb-[10px] bg-white text-gray-700 p-2 rounded-lg shadow-md">
+              <span className="font-medium">Final Price:</span>
+              <span>{finalPrice.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-4 flex justify-end gap-2 pb-4 px-6">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+          <button onClick={handleApplyTax} className="px-4 py-2 bg-brand_color text-white rounded">Apply</button>
+        </div>
+      </section>
+    </div>
+  );
+};

@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Slab:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+@layer utilities {
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+     /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+    }
+}
+
+.sellerheader .active{
+    @apply text-brand_color
+}
+
+.ql-toolbar {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+@layer components {
+  /* Style the main datepicker input */
+  .react-multi-date-picker input {
+    @apply p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:border-indigo-400 transition duration-200;
+  }
+
+  /* Style the calendar pop-up */
+  .react-multi-date-picker__calendar {
+    @apply shadow-lg rounded-lg bg-white p-4;
+  }
+
+  /* Style the datepicker range selection */
+  .react-multi-date-picker__range {
+    @apply bg-indigo-100 rounded-lg;
+  }
+}
+.ql-container {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+}
+
+input[type="checkbox"].appearance-none {
+  position: relative;
+}
+
+input[type="checkbox"].appearance-none::after {
+  content: "";
+  position: absolute;
+   top: -12%;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background-color: transparent;
+  border: 2px solid transparent;
+  border-radius: 2px;
+  background-size: 12px;
+  background-position: center;
+}
+
+input[type="checkbox"].appearance-none:checked::after {
+  content: "✓"; /* The checkmark symbol */
+  color: white;
+  text-align: center;
+  font-size: 15px;/* Your custom checked background color *//* Border color when checked */
+}
+
+.item1 li:nth-child(1){
+  background-color: aquamarine;
+}
+.clip-blob {
+  clip-path: path(
+    "M27.5,-39.1C35.3,-34,40.8,-25.2,45.8,-15.6C50.8,-5.9,55.4,4.7,53,14.9C50.6,25.1,41.3,34.9,30.6,38.3C19.8,41.6,7.7,38.6,-3.5,37.3C-14.7,36.1,-29.5,36.7,-38,30.2C-46.6,23.6,-48.9,10,-46.5,-2.3C-44,-14.6,-36.9,-26.7,-27.4,-31.8C-18,-37,-6.3,-35.1,3.4,-31.9C13.2,-28.7,26.3,-24.2,27.5,-39.1Z"
+  );
+}
+.swiper-pagination {
+  margin-top: 10px !important;
+  position: relative !important;
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin; /* Thinner scrollbar for Firefox */
+    scrollbar-color:  #f1f2f6; /* Thumb and track color */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 2px; /* Thin scrollbar width for WebKit browsers */
+    border-radius: 8px; /* Rounded track */
+
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f2f6; /* Track color */
+    border-radius: 8px; /* Rounded track */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: red; /* Thumb color */
+    border-radius: 8px; /* Rounded thumb */
+    border: none; /* Clean appearance */ 
+
+  }
+}
+
+
+/* For the Sidebar */
+.sidebar {
+  transition: transform 0.3s ease-out; /* This makes the sidebar slide in and out smoothly */
+}
+.text-nowrap {
+  white-space: nowrap !important;
+}
+/* For the Submenu */
+.submenu-open {
+    max-height: 500px; /* Adjust based on content */
+    transition: max-height 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.submenu-closed {
+    max-height: 0;
+    transition: max-height 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+/* Tailwind custom styles for SunEditor placeholder */
+.sun-editor-wrapper .sun-editor-editable::before {
+  @apply text-gray-400 text-base font-poppins; /* Tailwind utilities */
+  content: attr(data-placeholder); /* Ensure placeholder text is displayed */
+}
+
+.sun-editor-editable {
+  @apply caret-black; /* Set cursor color to black */
+}

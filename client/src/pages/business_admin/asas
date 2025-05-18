@@ -1,0 +1,176 @@
+import SunEditor from "suneditor-react";
+import "suneditor/dist/css/suneditor.min.css";
+
+const [content, setContent] = useState("");
+  const [codeInput, setCodeInput] = useState("<p>Start editing...</p>");
+  const [renderedCSS, setRenderedCSS] = useState(""); // For storing CSS content
+  const [isCodeView, setIsCodeView] = useState(false); // Flag to toggle between code view and rich text view
+
+  // Function to handle the conversion of code (HTML + CSS) into rendered HTML content for the Text Editor
+  const handleCodeToDesign = () => {
+    const htmlMatch = codeInput.match(/<style>(.*?)<\/style>/s);
+    const css = htmlMatch ? htmlMatch[1] : "";
+    setRenderedCSS(css);
+
+    const htmlWithoutCss = codeInput.replace(/<style>.*?<\/style>/s, "").trim();
+    setContent(htmlWithoutCss);
+    setIsCodeView(false); // Set code view to false (rich text mode)
+    setActiveTab("text");
+  };
+
+  useEffect(() => {
+    if (renderedCSS) {
+      const styleElement = document.getElementById("dynamic-css");
+      styleElement.innerHTML = renderedCSS;
+    }
+  }, [renderedCSS]);
+
+  // Function to update the content in the text editor and sync it to code editor
+  const handleTextEditorChange = (newContent) => {
+    setContent(newContent);
+
+    const htmlContent = newContent;
+    setCodeInput(`<style>${renderedCSS}</style>` + htmlContent);
+  };
+  text-label_size 2xl:text-[16px] font-label_weight 2xl:font-[500] text-neutral-600
+className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]"  
+  
+
+<SunEditor
+setContents={content}
+onChange={handleTextEditorChange}
+setOptions={{
+  width: "100%",
+  height: 400,
+  placeholder: "Description...", // Custom placeholder name
+  buttonList: [
+    ["undo", "redo"],
+    [
+      {
+        name: "formatBlock",
+        data: [
+          { tag: "P", title: "Paragraph" },
+          { tag: "H1", title: "Heading 1" },
+          { tag: "H2", title: "Heading 2" },
+          { tag: "H3", title: "Heading 3" },
+        ],
+      },
+      "fontSize",
+    ],
+    ["bold", "italic", "underline", "strike"],
+    ["fontColor", "hiliteColor"],
+    ["align", "list", "indent", "outdent"],
+    ["table", "link", "image"],
+    ["codeView"], // Button to toggle code view
+  ],
+  addDefaultStyle: false, // Disable default styles if needed
+}}
+enableCodeView={isCodeView} // If true, enable code view mode
+setDefaultStyle="font-family: 'Poppins', sans-serif; font-size: 16px;" // Set font family to Poppins and font size to 16px
+/>
+
+
+ // Create Date States
+ const [showCreateCalendar, setShowCreateCalendar] = useState(false);
+ const [createRange, setCreateRange] = useState([{ startDate: new Date(), endDate: new Date(), key: "selection" }]);
+ const [tempCreateRange, setTempCreateRange] = useState(createRange);
+
+ // Publish Date States
+ const [showPublishCalendar, setShowPublishCalendar] = useState(false);
+ const [publishRange, setPublishRange] = useState([{ startDate: new Date(), endDate: new Date(), key: "selection" }]);
+ const [tempPublishRange, setTempPublishRange] = useState(publishRange);
+
+ // Update Date States
+ const [showUpdateCalendar, setShowUpdateCalendar] = useState(false);
+ const [updateRange, setUpdateRange] = useState([{ startDate: new Date(), endDate: new Date(), key: "selection" }]);
+ const [tempUpdateRange, setTempUpdateRange] = useState(updateRange);
+
+ // Functions for Create Date
+ const handleCreateDateChange = (item) => setTempCreateRange([item.selection]);
+ const applyCreateDate = () => { setCreateRange(tempCreateRange); setShowCreateCalendar(false); };
+ const cancelCreateDate = () => { setTempCreateRange(createRange); setShowCreateCalendar(false); };
+
+ // Functions for Publish Date
+ const handlePublishDateChange = (item) => setTempPublishRange([item.selection]);
+ const applyPublishDate = () => { setPublishRange(tempPublishRange); setShowPublishCalendar(false); };
+ const cancelPublishDate = () => { setTempPublishRange(publishRange); setShowPublishCalendar(false); };
+
+ // Functions for Update Date
+ const handleUpdateDateChange = (item) => setTempUpdateRange([item.selection]);
+ const applyUpdateDate = () => { setUpdateRange(tempUpdateRange); setShowUpdateCalendar(false); };
+ const cancelUpdateDate = () => { setTempUpdateRange(updateRange); setShowUpdateCalendar(false); };
+
+  {/* Create Date Section */}
+  <div className="mb-[10px]">
+  <label className="text-label_size 2xl:text-[16px] text-neutral-600 font-label_weight">Create Date</label>
+  <br />
+  <div style={{ position: "relative", width: "100%" }}>
+    <input
+      type="text"
+      readOnly
+      value={`${format(createRange[0].startDate, "dd-MM-yyyy")} - ${format(createRange[0].endDate, "dd-MM-yyyy")}`}
+      onClick={() => setShowCreateCalendar(true)}
+      placeholder="Select Date Range"
+      className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]"
+    />
+    {showCreateCalendar && (
+      <div className="absolute z-10 bg-white shadow-md border-[1px] border-[#eee] w-full p-2">
+        <DateRange ranges={tempCreateRange} onChange={handleCreateDateChange} months={1} rangeColors={["#4A90E2"]} />
+        <div className="flex justify-end gap-2 mt-2">
+          <button onClick={cancelCreateDate} className="px-3 py-1 border rounded bg-gray-300">Cancel</button>
+          <button onClick={applyCreateDate} className="px-3 py-1 border rounded bg-indigo-600 text-white">Apply</button>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+{/* Publish Date Section */}
+<div className="mb-[10px]">
+  <label className="text-label_size 2xl:text-[16px] text-neutral-600 font-label_weight">Publish Date</label>
+  <br />
+  <div style={{ position: "relative", width: "100%" }}>
+    <input
+      type="text"
+      readOnly
+      value={`${format(publishRange[0].startDate, "dd-MM-yyyy")} - ${format(publishRange[0].endDate, "dd-MM-yyyy")}`}
+      onClick={() => setShowPublishCalendar(true)}
+      placeholder="Select Date Range"
+      className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]"
+    />
+    {showPublishCalendar && (
+      <div className="absolute z-10 bg-white shadow-md border-[1px] border-[#eee] w-full p-2">
+        <DateRange ranges={tempPublishRange} onChange={handlePublishDateChange} months={1} rangeColors={["#4A90E2"]} />
+        <div className="flex justify-end gap-2 mt-2">
+          <button onClick={cancelPublishDate} className="px-3 py-1 border rounded bg-gray-300">Cancel</button>
+          <button onClick={applyPublishDate} className="px-3 py-1 border rounded bg-indigo-600 text-white">Apply</button>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+{/* Update Date Section */}
+<div className="mb-[10px]">
+  <label className="text-label_size 2xl:text-[16px] text-neutral-600 font-label_weight">Update Date</label>
+  <br />
+  <div style={{ position: "relative", width: "100%" }}>
+    <input
+      type="text"
+      readOnly
+      value={`${format(updateRange[0].startDate, "dd-MM-yyyy")} - ${format(updateRange[0].endDate, "dd-MM-yyyy")}`}
+      onClick={() => setShowUpdateCalendar(true)}
+      placeholder="Select Date Range"
+      className="w-full mt-[3px] 2xl:mt-[7px] rounded-[5px] placeholder-gray-700 outline-brand_color text-input_text 2xl:text-[15px] h-input_height 2xl:h-[45px] border-[1px] border-[#eee] p-[12px]"
+    />
+    {showUpdateCalendar && (
+      <div className="absolute z-10 bg-white shadow-md border-[1px] border-[#eee] w-full p-2">
+        <DateRange ranges={tempUpdateRange} onChange={handleUpdateDateChange} months={1} rangeColors={["#4A90E2"]} />
+        <div className="flex justify-end gap-2 mt-2">
+          <button onClick={cancelUpdateDate} className="px-3 py-1 border rounded bg-gray-300">Cancel</button>
+          <button onClick={applyUpdateDate} className="px-3 py-1 border rounded bg-indigo-600 text-white">Apply</button>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
